@@ -33,3 +33,23 @@ def story():
 
     return HTTPResponse(status=201, body=payload)
 
+
+@app.route("/api/v1/stories.json", method="GET")
+def story():
+    db = Story(**MDB_CONFIG)
+    with db as cursor:
+        results = db.get_stories(cursor)
+
+    stories = []
+    for result in results:
+        data = {'story_id': result['story_id'],
+                'title': result['title'],
+                'description': result['description'],
+                'status': result['status'],
+                'author_id': result['author_id']}
+
+        stories.append(data)
+
+    stories = json.dumps(stories)
+    return HTTPResponse(status=200, body=stories)
+

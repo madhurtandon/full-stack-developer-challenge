@@ -16,6 +16,11 @@ class Story(DB):
         cursor.execute(sql)
 
     def get_status(self, status):
+        """
+        Convert the status from human readable format to a constants value
+        :param status:
+        :return: int
+        """
         status = status.lower()
         if status == 'draft':
             return self.STATUS_DRAFT
@@ -24,7 +29,12 @@ class Story(DB):
 
         raise Exception('Invalid Status')
 
-
     def create_story(self, cursor, title, description, status, author_id):
         sql = "INSERT INTO stories (title, description, status, author_id) VALUES (%s, %s, %s, %s)"
         cursor.execute(sql, (title, description, status, author_id))
+
+    def get_stories(self, cursor):
+        sql = "SELECT * FROM stories"
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        return results
