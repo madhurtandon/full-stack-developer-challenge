@@ -7,6 +7,21 @@ from challenge.validations.field_required import is_required, is_status_valid
 app = Bottle()
 
 
+def enable_cors(fn):
+    def _enable_cors(*args, **kwargs):
+        # set CORS headers
+        response.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, PUT, DELETE, GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'X-Requested-With, Content-Type'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+
+        if request.method != 'OPTIONS':
+            # actual request; reply with the actual response
+            return fn(*args, **kwargs)
+
+    return _enable_cors
+
+
 @app.route("/api/v1/health.json", method="GET")
 def health():
     return HTTPResponse(status=200, body="Healthy")
@@ -34,22 +49,25 @@ def story():
     return HTTPResponse(status=201, body=payload)
 
 
-@app.route("/api/v1/stories.json", method="GET")
+@app.route("/api/v1/stories.json", method=['OPTIONS', 'GET'])
+@enable_cors
 def story():
-    db = Story(**MDB_CONFIG)
-    with db as cursor:
-        results = db.get_stories(cursor)
+    if request.method == 'OPTIONS':
+        return {}
+    else:
+        db = Story(**MDB_CONFIG)
+        with db as cursor:
+            results = db.get_stories(cursor)
 
-    stories = []
-    for result in results:
-        data = {'story_id': result['story_id'],
-                'title': result['title'],
-                'description': result['description'],
-                'status': result['status'],
-                'author_id': result['author_id']}
+        stories = {"status": 200, "data": []}
+        for result in results:
+            db_result = {'story_id': result['story_id'],
+                         'title': result['title'],
+                         'description': result['description'],
+                         'status': 'PUBLISHED' if result['status'] == Story.STATUS_PUBLISHED else 'DRAFT',
+                         'author_id': result['author_id']}
 
-        stories.append(data)
+            stories['data'].append(db_result)
 
-    stories = json.dumps(stories)
-    return HTTPResponse(status=200, body=stories)
-
+        stories = json.dumps(stories)
+        return HTTPResponse(status=200, body=stories)
