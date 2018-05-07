@@ -1,0 +1,5 @@
+# web framework
+bottle
+
+#database
+pymysql
